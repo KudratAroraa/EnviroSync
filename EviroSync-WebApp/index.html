@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EnviroSync</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body class="body-neutral">
+  <div class="container">
+    <!-- Main Title -->
+    <h1>EnviroSync</h1>
+
+    <!-- Location Information -->
+    <div id="location-info">
+      <p>Live Coordinates: <span id="coordinates">-- , --</span></p>
+      <p>Distance to Room: <span id="distance">Calculating...</span></p>
+    </div>
+
+    <!-- Sensor Data Boxes -->
+    <div id="sensor-data">
+      <h2>Live Sensor Feedback</h2>
+      <div class="sensor-box">
+        <h3>Temperature</h3>
+        <p><span id="temp">--</span> °C</p>
+      </div>
+      <div class="sensor-box">
+        <h3>Humidity</h3>
+        <p><span id="humidity">--</span> %</p>
+      </div>
+    </div>
+
+    <!-- Control Buttons and Device Status -->
+    <div class="controls">
+      <h2>Device Controls</h2>
+      <button id="toggleAC" class="toggle-btn" disabled>Turn On AC</button>
+      <button id="toggleHeater" class="toggle-btn" disabled>Turn On Heater</button>
+      <div id="device-status">
+        <p><strong>AC Status:</strong> <span id="ac-status">OFF</span></p>
+        <p><strong>Heater Status:</strong> <span id="heater-status">OFF</span></p>
+      </div>
+      <p id="status">Checking location for proximity-based access...</p>
+    </div>
+  </div>
+</body>
+</html>
