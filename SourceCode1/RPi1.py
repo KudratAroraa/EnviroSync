@@ -20,14 +20,14 @@ firebaseConfig = {
 firebase = pyrebase.initialize_app(firebaseConfig)
 db = firebase.database()
 
-#Arduino BLE address and UUIDs
+# Arduino BLE address and UUIDs
 arduino_address = "40:91:51:A4:0F:02"
 SERVICE_UUID_CONTROL = "180D"
 CHARACTERISTIC_UUID_CONTROL = "2A58"
 SERVICE_UUID_ENVIRONMENT = "180C"
 CHARACTERISTIC_UUID_ENVIRONMENT = "2A57"
 
-#IP address and port for socket communication 
+# IP address and port for socket communication
 IP_ADDRESS = '192.168.31.71'
 PORT = 5000
 
@@ -68,6 +68,24 @@ def firebase_listener():
     #Start Firebase stream
     db.child("EnviroSync").stream(stream_handler)
 
+async def process_commands(client=None, socket_connection=None):
+    """
+    Processes commands from the queue and sends them to the Arduino via BLE or socket.
+    """
+    while True:
+        command = await command_queue.get()  #Wait for command
+        try:
+            if client and client.is_connected:
+                #Send command via Bluetooth
+                await client.write_gatt_char(CHARACTERISTIC_UUID_CONTROL, command.encode())
+                print(f"Command '{command}' sent to Arduino via Bluetooth.")
+            elif socket_connection:
+                #Send command via IP socket
+                socket_connection.sendall(command.encode())
+                print(f"Command '{command}' sent to Arduino via IP socket.")
+        except Exception as e:
+            print(f"Error sending command '{command}': {e}")
+        command_queue.task_done()
 
 async def bluetooth_connection():
     """
@@ -77,17 +95,17 @@ async def bluetooth_connection():
         async with BleakClient(arduino_address, timeout=30.0) as client:
             print("Connected to Arduino via Bluetooth.")
 
-            #Start processing commands in the background
-            asyncio.create_task(process_commands(client))
+            # Start processing commands in the background
+            asyncio.create_task(process_commands(client=client))
 
-            #Notification handler for BLE updates from Arduino
+            # Notification handler for BLE updates from Arduino
             def notification_handler(sender, data):
                 try:
                     data_str = data.decode("utf-8")
                     temperature, humidity = data_str.split(",")
                     print(f"Received from Arduino - Temperature: {temperature}, Humidity: {humidity}")
 
-                    #Update Firebase with new readings
+                    # Update Firebase with new readings
                     db.child("EnviroSync").update({
                         "temperature": float(temperature),
                         "humidity": float(humidity)
@@ -115,12 +133,14 @@ async def socket_connection():
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((IP_ADDRESS, PORT))
         print("Connected to Arduino via IP socket.")
-        
-        #Start processing commands in the background
+
+        # Start processing commands with socket connection
+        asyncio.create_task(process_commands(socket_connection=sock))
+
+        # Keep the connection alive
         while True:
-            await process_commands(None, socket_connection=sock)
             await asyncio.sleep(1)
-    
+
     except Exception as e:
         print(f"Error with socket connection: {e}")
         return False
@@ -143,6 +163,6 @@ async def main():
 
         await asyncio.sleep(1)
 
-#Start the main event loop
+# Start the main event loop
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
